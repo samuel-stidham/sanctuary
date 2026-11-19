@@ -40,7 +40,7 @@ Every command of the Go version is ported: `init`, `set`, `get`,
 `reveal`, `exec`, `passwd`, `rekey`, `migrate`, `show`, `list`,
 `stale`, `disable`, `delete`, and `purge`. Each one reads and writes
 the vault and the identity the Go version uses, and prints what the Go
-version prints. sanctuary passes all 235 tests of the shared suite, as
+version prints. sanctuary passes all 236 tests of the shared suite, as
 the Go version does.
 
 sanctuary has only been run against test vaults so far. Back up the
@@ -55,7 +55,7 @@ as a black box, so it tests behavior and never the code behind it.
 
 The Go binary must pass every test before a result from the Rust binary
 counts. A test is never edited to make the port pass. The suite
-currently holds 235 tests, and [tests/PARITY.md](tests/PARITY.md) maps
+currently holds 236 tests, and [tests/PARITY.md](tests/PARITY.md) maps
 each Go test to its counterpart here.
 
 The reference is built from a pinned commit of the Go repository. The

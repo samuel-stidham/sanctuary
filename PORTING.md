@@ -8,7 +8,7 @@ The Go test suite cannot run against a Rust binary, and Rust unit
 tests cannot run against Go. The conformance suite is the one suite
 both binaries run, so parity is proven there.
 
-1. `make test-oracle` passes every test, 235 since the second review. The Go reference still agrees
+1. `make test-oracle` passes every test, 236 since the first CI run. The Go reference still agrees
    with every expectation, so no test was bent to fit the port.
 2. `cargo test --test conformance <filter>` passes for the step's
    filters, against the Rust binary.
@@ -367,13 +367,28 @@ not optional. `age` uses `p256` only for its tagged and SSH
 recipients. `sanctuary` builds and opens X25519 and scrypt recipients
 alone. Update `age` when a release moves off that version.
 
-235 of 235 pass against both binaries.
+## After the first CI run
+
+The first run on a GitHub runner failed two color tests against the Go
+reference. The runner sets `CI`. The Go version's color library treats
+a terminal as a pipe while `CI` is set, so the reference printed no
+color where the tests expected it.
+
+- `sanctuary` did not read `CI`, so it colored a terminal the Go
+  version left plain. `src/color.rs` now follows the Go version.
+  `CLICOLOR_FORCE` still turns color on.
+- The harness passed `CI` through to the binary. It now removes it,
+  next to the other color variables.
+- `cli::terminal_help_is_plain_under_ci` pins the behavior for both
+  binaries.
+
+236 of 236 pass against both binaries.
 
 ## Done
 
-- [x] `cargo test` passes 235 of 235 conformance tests against the Rust
+- [x] `cargo test` passes 236 of 236 conformance tests against the Rust
       binary, on three runs in a row.
-- [x] `make test-oracle` passes 235 of 235 against the Go binary.
+- [x] `make test-oracle` passes 236 of 236 against the Go binary.
 - [x] All 22 tests in the "Ported as unit tests" table of
       `tests/PARITY.md` have a Rust unit test. The 3 left as not
       ported test log attribute groups, which the port does not have.

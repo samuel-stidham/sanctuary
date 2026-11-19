@@ -839,6 +839,41 @@ fn no_color_beats_forced_color() {
     assert!(!helped.stdout.contains('\x1b'));
 }
 
+// Added for sanctuary. Both binaries treat a terminal as a pipe while
+// CI is set, so a runner's log carries no styling bytes. CLICOLOR_FORCE
+// still turns color on there.
+#[test]
+fn terminal_help_is_plain_under_ci() {
+    let home = home();
+
+    let mut command = sandboxed(home.path());
+
+    command
+        .env("COLORTERM", "truecolor")
+        .env("TERM", "dumb")
+        .env("CI", "true")
+        .arg("--help");
+
+    let (displayed, status) = pty::capture_on_terminal(command);
+
+    assert!(status.success());
+    assert!(!displayed.contains('\x1b'), "{displayed:?}");
+
+    let mut command = sandboxed(home.path());
+
+    command
+        .env("COLORTERM", "truecolor")
+        .env("TERM", "dumb")
+        .env("CI", "true")
+        .env("CLICOLOR_FORCE", "1")
+        .arg("--help");
+
+    let (displayed, status) = pty::capture_on_terminal(command);
+
+    assert!(status.success());
+    assert!(displayed.contains('\x1b'), "{displayed:?}");
+}
+
 // Go: TestBannerGradientRampDirection
 //
 // On a terminal that takes 24-bit color the banner carries the full

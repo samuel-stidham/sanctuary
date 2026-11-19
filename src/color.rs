@@ -4,7 +4,8 @@
 //! so a redirected record or help page carries no styling bytes. The
 //! environment can override both ways: `NO_COLOR` turns color off
 //! everywhere, and `CLICOLOR_FORCE` turns it on for a pipe at the
-//! 16-color level.
+//! 16-color level. A set `CI` makes a terminal count as a pipe, as it
+//! does for the Go version.
 
 use std::io::IsTerminal;
 
@@ -63,7 +64,9 @@ pub fn detect(is_terminal: bool, env: &dyn Fn(&str) -> Option<String>) -> Profil
         return Profile::Plain;
     }
 
-    let advertised = if is_terminal {
+    // A continuous integration runner may attach a terminal that
+    // nobody reads. The Go version's color library treats it as a pipe.
+    let advertised = if is_terminal && var("CI").is_empty() {
         advertised_by_terminal(&var("TERM"), &var("COLORTERM"), &var("TERM_PROGRAM"))
     } else {
         Profile::Plain
@@ -146,6 +149,32 @@ mod tests {
         );
         assert_eq!(profile(true, &[("TERM", "dumb")]), Profile::Plain);
         assert_eq!(profile(true, &[]), Profile::Plain);
+    }
+
+    #[test]
+    fn a_terminal_under_ci_counts_as_a_pipe() {
+        let terminal = [("COLORTERM", "truecolor"), ("TERM", "xterm-256color")];
+
+        assert_eq!(
+            profile(true, &[terminal[0], terminal[1], ("CI", "true")]),
+            Profile::Plain
+        );
+        assert_eq!(
+            profile(true, &[terminal[0], terminal[1], ("CI", "")]),
+            Profile::TrueColor
+        );
+        assert_eq!(
+            profile(
+                true,
+                &[
+                    terminal[0],
+                    terminal[1],
+                    ("CI", "1"),
+                    ("CLICOLOR_FORCE", "1")
+                ]
+            ),
+            Profile::Ansi
+        );
     }
 
     #[test]

@@ -117,6 +117,8 @@ pub fn sandboxed(home: &Path) -> Command {
         "NO_COLOR",
         "CLICOLOR",
         "CLICOLOR_FORCE",
+        // A runner sets CI, and both binaries then drop terminal color.
+        "CI",
     ] {
         command.env_remove(name);
     }
