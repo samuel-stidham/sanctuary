@@ -1,0 +1,37 @@
+Generate the autocompletion script for the zsh shell.
+
+If shell completion is not already enabled in your environment you will need
+to enable it.  You can execute the following once:
+
+	echo "autoload -U compinit; compinit" >> ~/.zshrc
+
+To load completions in your current shell session:
+
+	source <(safetybox completion zsh)
+
+To load completions for every new session, execute once:
+
+#### Linux:
+
+	safetybox completion zsh > "${fpath[1]}/_safetybox"
+
+#### macOS:
+
+	safetybox completion zsh > $(brew --prefix)/share/zsh/site-functions/_safetybox
+
+You will need to start a new shell for this setup to take effect.
+
+Usage:
+  safetybox completion zsh [flags]
+
+Flags:
+  -h, --help[=true|false]              help for zsh
+      --no-descriptions[=true|false]   disable completion descriptions
+
+Global Flags:
+      --identity string          path to the identity file (default $XDG_CONFIG_HOME/safetybox/identity.age)
+      --json[=true|false]        emit compact JSON for pipes instead of pretty JSON
+      --log-json[=true|false]    emit logs as JSON
+      --passphrase-file string   read the identity passphrase from this file instead of prompting
+      --vault string             path to the vault database (default $XDG_DATA_HOME/safetybox/vault.db)
+  -v, --verbose[=true|false]     enable debug logging

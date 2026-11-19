@@ -1,0 +1,16 @@
+passwd decrypts the identity with the current passphrase and re-encrypts it with a new one. The key itself does not change, so the vault is untouched.
+
+Usage:
+  safetybox passwd [flags]
+
+Flags:
+  -h, --help[=true|false]            help for passwd
+      --new-passphrase-file string   read the new passphrase from this file instead of prompting
+
+Global Flags:
+      --identity string          path to the identity file (default $XDG_CONFIG_HOME/safetybox/identity.age)
+      --json[=true|false]        emit compact JSON for pipes instead of pretty JSON
+      --log-json[=true|false]    emit logs as JSON
+      --passphrase-file string   read the identity passphrase from this file instead of prompting
+      --vault string             path to the vault database (default $XDG_DATA_HOME/safetybox/vault.db)
+  -v, --verbose[=true|false]     enable debug logging

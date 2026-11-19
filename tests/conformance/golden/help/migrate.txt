@@ -1,0 +1,15 @@
+migrate re-seals every secret into the current envelope format, which binds the env name and expiry into each value so a later metadata edit is detectable on read. It needs your passphrase, because re-sealing decrypts each value. The identity and the recipient do not change. Back up the vault file first.
+
+Usage:
+  safetybox migrate [flags]
+
+Flags:
+  -h, --help[=true|false]   help for migrate
+
+Global Flags:
+      --identity string          path to the identity file (default $XDG_CONFIG_HOME/safetybox/identity.age)
+      --json[=true|false]        emit compact JSON for pipes instead of pretty JSON
+      --log-json[=true|false]    emit logs as JSON
+      --passphrase-file string   read the identity passphrase from this file instead of prompting
+      --vault string             path to the vault database (default $XDG_DATA_HOME/safetybox/vault.db)
+  -v, --verbose[=true|false]     enable debug logging

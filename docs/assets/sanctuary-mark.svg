@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" role="img" aria-label="sanctuary">
+  <path d="M12 2.5 C17 5.5 20 9.5 20 13 V19 A2 2 0 0 1 18 21 H6 A2 2 0 0 1 4 19 V13 C4 9.5 7 5.5 12 2.5 Z" fill="#1E293B"></path>
+  <path d="M12 9.5 C13.8 11.8 14.6 13 14.6 14.4 A2.6 2.6 0 0 1 9.4 14.4 C9.4 13 10.2 11.8 12 9.5 Z" fill="#F59E0B"></path>
+</svg>

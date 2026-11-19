@@ -1,0 +1,18 @@
+reveal is the single verb that displays plaintext. Everything else redacts. One name prints one JSON object. Several names, --env, or --prefix select a batch that decrypts with a single passphrase read. --format sh or fish emits assignment lines ready to source into a shell session.
+
+Usage:
+  safetybox reveal [name]... [--env] [--prefix PREFIX] [--format json|sh|fish] [flags]
+
+Flags:
+      --env[=true|false]    select every secret that has an env name
+      --format string       output format: json, sh, or fish (default "json")
+  -h, --help[=true|false]   help for reveal
+      --prefix string       select every secret under a name prefix
+
+Global Flags:
+      --identity string          path to the identity file (default $XDG_CONFIG_HOME/safetybox/identity.age)
+      --json[=true|false]        emit compact JSON for pipes instead of pretty JSON
+      --log-json[=true|false]    emit logs as JSON
+      --passphrase-file string   read the identity passphrase from this file instead of prompting
+      --vault string             path to the vault database (default $XDG_DATA_HOME/safetybox/vault.db)
+  -v, --verbose[=true|false]     enable debug logging

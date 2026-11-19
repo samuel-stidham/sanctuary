@@ -1,0 +1,24 @@
+Generate the autocompletion script for safetybox for the specified shell.
+See each sub-command's help for details on how to use the generated script.
+
+Usage:
+  safetybox completion [command]
+
+Available Commands:
+  bash        Generate the autocompletion script for bash
+  fish        Generate the autocompletion script for fish
+  powershell  Generate the autocompletion script for powershell
+  zsh         Generate the autocompletion script for zsh
+
+Flags:
+  -h, --help[=true|false]   help for completion
+
+Global Flags:
+      --identity string          path to the identity file (default $XDG_CONFIG_HOME/safetybox/identity.age)
+      --json[=true|false]        emit compact JSON for pipes instead of pretty JSON
+      --log-json[=true|false]    emit logs as JSON
+      --passphrase-file string   read the identity passphrase from this file instead of prompting
+      --vault string             path to the vault database (default $XDG_DATA_HOME/safetybox/vault.db)
+  -v, --verbose[=true|false]     enable debug logging
+
+Use "safetybox completion [command] --help" for more information about a command.

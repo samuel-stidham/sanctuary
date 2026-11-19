@@ -1,0 +1,17 @@
+exec resolves every secret that has an env name, decrypts its newest enabled version, and runs the command with those variables added to the environment. The child's exit code is propagated.
+
+safetybox's own flags must come before the command. Everything from the command name onward belongs to the child, so a child flag never changes which vault or identity safetybox reads.
+
+Usage:
+  safetybox exec -- <command> [args...] [flags]
+
+Flags:
+  -h, --help[=true|false]   help for exec
+
+Global Flags:
+      --identity string          path to the identity file (default $XDG_CONFIG_HOME/safetybox/identity.age)
+      --json[=true|false]        emit compact JSON for pipes instead of pretty JSON
+      --log-json[=true|false]    emit logs as JSON
+      --passphrase-file string   read the identity passphrase from this file instead of prompting
+      --vault string             path to the vault database (default $XDG_DATA_HOME/safetybox/vault.db)
+  -v, --verbose[=true|false]     enable debug logging

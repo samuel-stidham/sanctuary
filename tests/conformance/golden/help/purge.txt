@@ -1,0 +1,16 @@
+purge erases every envelope of the secret and marks all versions destroyed. The values are gone forever. Rows and history remain, so the secret name stays readable in the vault forever, even after purge. It requires --yes.
+
+Usage:
+  safetybox purge <name> [flags]
+
+Flags:
+  -h, --help[=true|false]   help for purge
+      --yes[=true|false]    confirm the irreversible destruction
+
+Global Flags:
+      --identity string          path to the identity file (default $XDG_CONFIG_HOME/safetybox/identity.age)
+      --json[=true|false]        emit compact JSON for pipes instead of pretty JSON
+      --log-json[=true|false]    emit logs as JSON
+      --passphrase-file string   read the identity passphrase from this file instead of prompting
+      --vault string             path to the vault database (default $XDG_DATA_HOME/safetybox/vault.db)
+  -v, --verbose[=true|false]     enable debug logging

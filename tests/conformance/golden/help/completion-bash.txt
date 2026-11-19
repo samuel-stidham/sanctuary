@@ -1,0 +1,35 @@
+Generate the autocompletion script for the bash shell.
+
+This script depends on the 'bash-completion' package.
+If it is not installed already, you can install it via your OS's package manager.
+
+To load completions in your current shell session:
+
+	source <(safetybox completion bash)
+
+To load completions for every new session, execute once:
+
+#### Linux:
+
+	safetybox completion bash > /etc/bash_completion.d/safetybox
+
+#### macOS:
+
+	safetybox completion bash > $(brew --prefix)/etc/bash_completion.d/safetybox
+
+You will need to start a new shell for this setup to take effect.
+
+Usage:
+  safetybox completion bash
+
+Flags:
+  -h, --help[=true|false]              help for bash
+      --no-descriptions[=true|false]   disable completion descriptions
+
+Global Flags:
+      --identity string          path to the identity file (default $XDG_CONFIG_HOME/safetybox/identity.age)
+      --json[=true|false]        emit compact JSON for pipes instead of pretty JSON
+      --log-json[=true|false]    emit logs as JSON
+      --passphrase-file string   read the identity passphrase from this file instead of prompting
+      --vault string             path to the vault database (default $XDG_DATA_HOME/safetybox/vault.db)
+  -v, --verbose[=true|false]     enable debug logging

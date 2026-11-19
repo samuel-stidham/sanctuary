@@ -1,0 +1,15 @@
+get decrypts the newest enabled version, verifies its address binding, and prints metadata with the value redacted. Use reveal to display the plaintext.
+
+Usage:
+  safetybox get <name> [flags]
+
+Flags:
+  -h, --help[=true|false]   help for get
+
+Global Flags:
+      --identity string          path to the identity file (default $XDG_CONFIG_HOME/safetybox/identity.age)
+      --json[=true|false]        emit compact JSON for pipes instead of pretty JSON
+      --log-json[=true|false]    emit logs as JSON
+      --passphrase-file string   read the identity passphrase from this file instead of prompting
+      --vault string             path to the vault database (default $XDG_DATA_HOME/safetybox/vault.db)
+  -v, --verbose[=true|false]     enable debug logging

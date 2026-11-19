@@ -1,0 +1,41 @@
+[95m ___   _   ___ ___ _______   _____  _____  __[0m
+[95m/ __| /_\ | __| __|_   _\ \ / / _ )/ _ \ \/ /[0m
+[91m\__ \/ _ \| _|| _|  | |  \ V /| _ \ (_) >  <[0m
+[91m|___/_/ \_\_| |___| |_|   |_| |___/\___/_/\_\[0m
+
+Safetybox <VERSION>
+
+Safetybox is a CLI-first secrets manager. Values are sealed in age envelopes. Metadata lives in SQLite.
+
+[1;33mUsage:[0m
+  safetybox [command]
+
+[1;33mAvailable Commands:[0m
+  [32mcompletion [0m Generate the autocompletion script for the specified shell
+  [32mdelete     [0m Soft-delete a secret
+  [32mdisable    [0m Disable a secret version
+  [32mexec       [0m Run a command with secrets injected into its environment
+  [32mget        [0m Fetch and verify the newest enabled version of a secret
+  [32mhelp       [0m Help about any command
+  [32minit       [0m Create a new identity and vault
+  [32mlist       [0m List secrets, optionally under a name prefix
+  [32mmigrate    [0m Upgrade an older vault to the current format
+  [32mpasswd     [0m Change the identity passphrase
+  [32mpurge      [0m Destroy a secret's envelopes forever
+  [32mrekey      [0m Rotate the identity and re-encrypt every live version
+  [32mreveal     [0m Deliberately print secrets' plaintext values
+  [32mset        [0m Store a new version of a secret
+  [32mshow       [0m Print a secret's metadata, never its value
+  [32mstale      [0m List secrets past their expiry
+
+[1;33mFlags:[0m
+  [32m-h, --help[=true|false][0m        help for safetybox
+      [32m--identity string[0m          path to the identity file (default $XDG_CONFIG_HOME/safetybox/identity.age)
+      [32m--json[=true|false][0m        emit compact JSON for pipes instead of pretty JSON
+      [32m--log-json[=true|false][0m    emit logs as JSON
+      [32m--passphrase-file string[0m   read the identity passphrase from this file instead of prompting
+      [32m--vault string[0m             path to the vault database (default $XDG_DATA_HOME/safetybox/vault.db)
+  [32m-v, --verbose[=true|false][0m     enable debug logging
+      [32m--version[=true|false][0m     version for safetybox
+
+Use "safetybox [command] --help" for more information about a command.

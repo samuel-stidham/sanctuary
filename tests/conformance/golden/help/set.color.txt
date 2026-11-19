@@ -1,0 +1,18 @@
+set reads the value from stdin, or from a no-echo prompt on a terminal, and appends it as a new enabled version. Values never come from arguments. Prior versions stay enabled unless --revoke-previous is passed.
+
+[1;33mUsage:[0m
+  safetybox set <name> [flags]
+
+[1;33mFlags:[0m
+      [32m--env-name string[0m                environment variable name used by exec
+      [32m--expires string[0m                 expiry as RFC3339 or YYYY-MM-DD (staleness flag, never deletion)
+  [32m-h, --help[=true|false][0m              help for set
+      [32m--revoke-previous[=true|false][0m   disable all older enabled versions
+
+[1;33mGlobal Flags:[0m
+      [32m--identity string[0m          path to the identity file (default $XDG_CONFIG_HOME/safetybox/identity.age)
+      [32m--json[=true|false][0m        emit compact JSON for pipes instead of pretty JSON
+      [32m--log-json[=true|false][0m    emit logs as JSON
+      [32m--passphrase-file string[0m   read the identity passphrase from this file instead of prompting
+      [32m--vault string[0m             path to the vault database (default $XDG_DATA_HOME/safetybox/vault.db)
+  [32m-v, --verbose[=true|false][0m     enable debug logging
