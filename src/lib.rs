@@ -18,6 +18,7 @@ pub mod json;
 pub mod locked;
 pub mod logging;
 pub mod quote;
+pub mod reference;
 pub mod secret;
 pub mod sys;
 pub mod timestamp;

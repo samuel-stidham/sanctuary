@@ -12,6 +12,67 @@ use crate::support::{
     sibling,
 };
 
+// Go: TestRekeyCompletesThroughAnUncleanIdentityPath
+//
+// rekey once committed the vault to the new key and then failed the
+// identity swap, when --identity was not a clean path. The vault was
+// then sealed to a key that sat in the .new sibling, and every read
+// failed. The paths from a flag are cleaned once.
+#[test]
+fn rekey_completes_through_an_unclean_identity_path() {
+    let fixture = Fixture::new();
+
+    fixture.set("api/one", VALUE_ONE, &[]);
+
+    // The same file, spelled through a directory that does not exist.
+    let unclean = |path: &std::path::Path| {
+        let dir = path.parent().expect("a parent");
+
+        format!(
+            "{}/../absent/../{}/{}",
+            dir.display(),
+            dir.file_name().expect("a name").to_string_lossy(),
+            path.file_name().expect("a name").to_string_lossy()
+        )
+    };
+
+    let invoke = |args: &[&str]| {
+        let mut command = sandboxed(fixture.root());
+
+        command
+            .arg("--identity")
+            .arg(unclean(&fixture.identity))
+            .arg("--vault")
+            .arg(unclean(&fixture.vault))
+            .arg("--passphrase-file")
+            .arg(&fixture.passphrase_file)
+            .args(args);
+
+        run(command, "")
+    };
+
+    let rekeyed = invoke(&["rekey", "--json"]).assert_ok().json();
+
+    assert_eq!(
+        rekeyed["backupIdentity"],
+        sibling(&fixture.identity, ".bak")
+            .to_string_lossy()
+            .as_ref(),
+        "the reported backup path must be the clean spelling"
+    );
+    assert!(sibling(&fixture.identity, ".bak").exists());
+    assert!(
+        !sibling(&fixture.identity, ".new").exists(),
+        "the staged identity must be promoted, not left behind"
+    );
+
+    // The vault must read back through both spellings.
+    let revealed = invoke(&["reveal", "api/one", "--json"]).assert_ok().json();
+
+    assert_eq!(revealed["value"], VALUE_ONE);
+    assert_eq!(fixture.reveal_value("api/one"), VALUE_ONE);
+}
+
 // A default path with `..` after a directory that does not exist is one
 // path, however it is spelled. rekey must find the identity it loaded
 // when it comes to swap the files, or the vault ends up on a key the

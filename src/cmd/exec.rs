@@ -347,6 +347,8 @@ fn variable_limit() -> Option<usize> {
 
 /// The variable names a skipped or withheld secret was meant to supply
 /// and nothing else did. A name another secret supplied is current, so it stays.
+/// A reserved name stays too: the child keeps the value it inherited,
+/// such as the real PATH.
 fn stale_names<'a>(
     skipped: impl Iterator<Item = &'a str>,
     delivered: &[(String, String)],
@@ -355,6 +357,7 @@ fn stale_names<'a>(
 
     for env_name in skipped {
         if is_shell_identifier(env_name)
+            && !is_reserved(env_name)
             && !delivered.iter().any(|(name, _)| name == env_name)
             && !stale.contains(&env_name)
         {
@@ -506,6 +509,7 @@ mod tests {
             entry("api/four", Some("")),
             entry("api/five", None),
             entry("api/six", Some("FAKE_ONE")),
+            entry("api/seven", Some("PATH")),
         ];
         let delivered = [("FAKE_SUPPLIED".to_owned(), "api/other".to_owned())];
 

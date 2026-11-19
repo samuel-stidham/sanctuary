@@ -504,32 +504,61 @@ fn no_arguments_log_nothing() {
     assert!(helped.stderr.is_empty());
 }
 
+// Go: TestUsageErrorWording
+//
 // A usage error is one error record on stderr with exit 1, and nothing
-// on stdout. The wording belongs to each binary's argument parser, so
-// it is pinned for the reference alone.
+// on stdout. A miscounted command line reads the same in both
+// binaries. An unknown flag or verb is worded by each binary's own
+// argument parser, so that wording is pinned for the reference alone.
 #[test]
 fn usage_errors_are_one_error_record() {
     let home = home();
 
-    let cases: [(&[&str], &str); 7] = [
+    let shared: [(&[&str], &str); 9] = [
+        (&["set"], "too few arguments: set accepts 1 argument"),
+        (&["get"], "too few arguments: get accepts 1 argument"),
+        (
+            &["get", "a", "b"],
+            "too many arguments: get accepts 1 argument",
+        ),
+        (
+            &["set", "api/one", "extra"],
+            "too many arguments: set accepts 1 argument",
+        ),
+        (
+            &["disable", "only-a-name"],
+            "too few arguments: disable accepts 2 arguments",
+        ),
+        (
+            &["disable", "api/one", "1", "extra"],
+            "too many arguments: disable accepts 2 arguments",
+        ),
+        (
+            &["list", "a", "b"],
+            "too many arguments: list accepts at most 1 argument",
+        ),
+        (
+            &["rekey", "extra"],
+            "too many arguments: rekey accepts no arguments",
+        ),
+        (
+            &["exec"],
+            "too few arguments: exec accepts at least 1 argument",
+        ),
+    ];
+
+    for (args, wording) in shared {
+        let failed = bare(&home, args).assert_fails();
+
+        assert!(failed.stdout.is_empty(), "{args:?}");
+        assert_eq!(failed.stderr, format!("ERRO {wording}\n"), "{args:?}");
+    }
+
+    let cases: [(&[&str], &str); 2] = [
         (&["--bogusflag"], "ERRO unknown flag: --bogusflag\n"),
         (
             &["bogusverb"],
             "ERRO unknown command \"bogusverb\" for \"safetybox\"\n",
-        ),
-        (&["set"], "ERRO accepts 1 arg(s), received 0\n"),
-        (&["get", "a", "b"], "ERRO accepts 1 arg(s), received 2\n"),
-        (
-            &["disable", "only-a-name"],
-            "ERRO accepts 2 arg(s), received 1\n",
-        ),
-        (
-            &["list", "a", "b"],
-            "ERRO accepts at most 1 arg(s), received 2\n",
-        ),
-        (
-            &["init", "extra"],
-            "ERRO unknown command \"extra\" for \"safetybox init\"\n",
         ),
     ];
 
@@ -554,6 +583,48 @@ fn usage_errors_are_one_error_record() {
 
         if is_reference() {
             assert_eq!(failed.stderr, reference_wording, "{args:?}");
+        }
+    }
+}
+
+// Go: TestUsageErrorsNeverRepeatAStrayArgument
+//
+// A stray argument is the usual way a secret lands on a command line.
+// Every verb counts it and never repeats it, in either log format.
+// exec and reveal take any number of arguments, so they have no case.
+#[test]
+fn a_stray_argument_is_never_repeated() {
+    const STRAY: &str = "FAKE-STRAY-ARG";
+
+    let home = home();
+
+    for verb in [
+        "init", "set", "get", "passwd", "rekey", "migrate", "show", "list", "stale", "disable",
+        "delete", "purge",
+    ] {
+        for log_json in [false, true] {
+            let mut args = vec![verb, STRAY, STRAY, STRAY];
+
+            if log_json {
+                args.insert(0, "--log-json");
+            }
+
+            let failed = bare(&home, &args).assert_fails();
+
+            assert!(failed.stdout.is_empty(), "{args:?}");
+            assert!(
+                !failed.stderr.contains(STRAY),
+                "{args:?}: {}",
+                failed.stderr
+            );
+            assert!(
+                failed
+                    .stderr
+                    .contains(&format!("too many arguments: {verb} accepts ")),
+                "{args:?}: {}",
+                failed.stderr
+            );
+            assert_eq!(failed.stderr.lines().count(), 1, "{args:?}");
         }
     }
 }

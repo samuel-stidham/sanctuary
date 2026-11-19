@@ -278,18 +278,26 @@ fn parse_failure(root: &Command, path: &[String], err: &clap::Error) -> Result<(
 /// A stray argument is never repeated. Someone who types a value where
 /// only a name belongs must not find it copied into the error line and
 /// from there into scrollback or a log shipper. The message says how
-/// many arguments the command takes.
+/// many arguments the command takes, in the Go original's words.
 fn usage_message(root: &Command, path: &[String], err: &clap::Error) -> String {
     if err.kind() == ErrorKind::UnknownArgument
         && let Some(stray) = err.get(ContextKind::InvalidArg)
         && !stray.to_string().starts_with('-')
     {
-        return too_many_arguments(root, path);
+        return miscounted(root, path, "too many");
     }
 
     if err.kind() == ErrorKind::MissingRequiredArgument
         && let Some(missing) = err.get(ContextKind::InvalidArg)
     {
+        let missing = missing.to_string();
+
+        // Every required argument is positional. A required flag would
+        // keep the parser's own wording.
+        if !missing.lines().any(|name| name.starts_with('-')) {
+            return miscounted(root, path, "too few");
+        }
+
         return format!("missing required argument: {missing}")
             .lines()
             .collect::<Vec<_>>()
@@ -303,23 +311,47 @@ fn usage_message(root: &Command, path: &[String], err: &clap::Error) -> String {
 }
 
 /// Says how many arguments the command at `path` takes, for a command
-/// line that carried one too many.
-fn too_many_arguments(root: &Command, path: &[String]) -> String {
+/// line that carried too many or too few.
+fn miscounted(root: &Command, path: &[String], which: &str) -> String {
     let command = path
         .iter()
         .try_fold(root, |command, name| command.find_subcommand(name))
         .unwrap_or(root);
 
-    let accepted = match command.get_positionals().count() {
-        0 => "no arguments".to_owned(),
+    format!(
+        "{which} arguments: {} accepts {}",
+        command.get_name(),
+        accepted_arguments(command)
+    )
+}
+
+/// Words the argument count a command accepts.
+fn accepted_arguments(command: &Command) -> String {
+    let plural = |count: usize| match count {
         1 => "1 argument".to_owned(),
         count => format!("{count} arguments"),
     };
 
-    format!(
-        "too many arguments: {} accepts {accepted}",
-        command.get_name()
-    )
+    let minimum = command
+        .get_positionals()
+        .filter(|positional| positional.is_required_set())
+        .count();
+    let maximum = command.get_positionals().count();
+    let unbounded = command.get_positionals().any(|positional| {
+        positional
+            .get_num_args()
+            .is_some_and(|range| range.max_values() == usize::MAX)
+    });
+
+    if unbounded {
+        format!("at least {}", plural(minimum))
+    } else if maximum == 0 {
+        "no arguments".to_owned()
+    } else if minimum == maximum {
+        plural(maximum)
+    } else {
+        format!("at most {}", plural(maximum))
+    }
 }
 
 /// Prints the help page of the command `path` names under the root.
@@ -413,6 +445,7 @@ mod tests {
         usage_message(&root, &scanned.path, &err)
     }
 
+    // Go: TestUsageErrorWording
     #[test]
     fn a_stray_argument_is_never_repeated() {
         for (args, want) in [
@@ -430,7 +463,7 @@ mod tests {
             ),
             (
                 vec!["list", "api", "FAKE-STRAY-ARG"],
-                "too many arguments: list accepts 1 argument",
+                "too many arguments: list accepts at most 1 argument",
             ),
             (
                 vec!["rekey", "FAKE-STRAY-ARG"],
@@ -451,6 +484,24 @@ mod tests {
             refusal(&["set", "api/one", "--bogus=FAKE-STRAY-ARG"]),
             "unexpected argument '--bogus' found"
         );
-        assert_eq!(refusal(&["set"]), "missing required argument: <NAME>");
+    }
+
+    // Go: TestUsageErrorWording
+    #[test]
+    fn a_missing_argument_is_counted_in_the_same_words() {
+        for (args, want) in [
+            (vec!["get"], "too few arguments: get accepts 1 argument"),
+            (vec!["set"], "too few arguments: set accepts 1 argument"),
+            (
+                vec!["disable", "api/one"],
+                "too few arguments: disable accepts 2 arguments",
+            ),
+            (
+                vec!["exec"],
+                "too few arguments: exec accepts at least 1 argument",
+            ),
+        ] {
+            assert_eq!(refusal(&args), want, "{args:?}");
+        }
     }
 }

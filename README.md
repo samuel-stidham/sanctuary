@@ -6,6 +6,24 @@ CLI-first secrets manager for *nix. It keeps named, versioned secrets in
 a SQLite vault. Every value is sealed in an
 [age](https://age-encryption.org) envelope before it touches disk.
 
+## Documentation
+
+The documentation for both versions lives in one place.
+
+- Read it at <https://samuel-stidham.github.io/safetybox-docs/>.
+- Its source is
+  [samuel-stidham/safetybox-docs](https://github.com/samuel-stidham/safetybox-docs).
+
+It covers install, a getting started guide, a full tutorial, the
+command reference, configuration, and the security model. Every
+example there works with `sanctuary`.
+
+## Install
+
+```sh
+cargo install sanctuary
+```
+
 ## Two versions, both maintained
 
 SafetyBox exists in two versions, and both are maintained.
@@ -28,7 +46,7 @@ release it is compatible with in its version line.
 
 ```console
 $ sanctuary --version
-sanctuary 0.1.0 (Rust, compatible with safetybox v4.0.2)
+sanctuary 0.1.1 (Rust, compatible with safetybox v4.0.3)
 ```
 
 A behavior change lands in both versions. The Go release is tagged
@@ -40,7 +58,7 @@ Every command of the Go version is ported: `init`, `set`, `get`,
 `reveal`, `exec`, `passwd`, `rekey`, `migrate`, `show`, `list`,
 `stale`, `disable`, `delete`, and `purge`. Each one reads and writes
 the vault and the identity the Go version uses, and prints what the Go
-version prints. sanctuary passes all 236 tests of the shared suite, as
+version prints. sanctuary passes all 245 tests of the shared suite, as
 the Go version does.
 
 sanctuary has only been run against test vaults so far. Back up the
@@ -55,11 +73,12 @@ as a black box, so it tests behavior and never the code behind it.
 
 The Go binary must pass every test before a result from the Rust binary
 counts. A test is never edited to make the port pass. The suite
-currently holds 236 tests, and [tests/PARITY.md](tests/PARITY.md) maps
+currently holds 245 tests, and [tests/PARITY.md](tests/PARITY.md) maps
 each Go test to its counterpart here.
 
-The reference is built from a pinned commit of the Go repository. The
-`Makefile` records that commit and its tag.
+The reference is built from a pinned commit of the Go repository.
+`src/reference.rs` records that commit and its tag, and nothing else
+does. The version line and the `Makefile` both read it.
 
 ## Intended differences
 
@@ -68,14 +87,19 @@ sanctuary differs from the Go version in presentation only.
 | What | Go version | Rust version |
 | --- | --- | --- |
 | Command name, in help and in hints | `safetybox` | `sanctuary` |
-| Version line | `safetybox version v4.0.2` | `sanctuary 0.1.0 (Rust, compatible with safetybox v4.0.2)` |
+| Version line | `safetybox version v4.0.3` | `sanctuary 0.1.1 (Rust, compatible with safetybox v4.0.3)` |
 | Help layout | cobra | laid out by sanctuary, in clap's vocabulary |
-| Usage error wording | cobra | clap, cut to one line |
+| Wording of an unknown flag or an unknown command | cobra | clap, cut to one line |
 | Completion scripts | cobra | `clap_complete` |
 
 Everything else is the same: the vault and identity formats, the
 environment variables, result output, log records, prompts, and exit
-codes.
+codes. A miscounted command line reads the same in both, such as
+`too few arguments: set accepts 1 argument`.
+
+The documentation lists
+[every difference](https://samuel-stidham.github.io/safetybox-docs/two-versions.html),
+down to the detail text of a few errors.
 
 ## Configuration
 

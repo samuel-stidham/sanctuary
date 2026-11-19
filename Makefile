@@ -1,6 +1,16 @@
 ORACLE_REPO ?= $(HOME)/Code/samuel-stidham/safetybox
-ORACLE_REF  ?= e37428e473550170d6b6d70a7a34938ee776a819
-ORACLE_TAG  ?= v4.0.2
+# src/reference.rs names the Go release and its commit. A move to a new
+# release changes that file alone.
+REFERENCE   := src/reference.rs
+ORACLE_REF  ?= $(shell sed -n 's/^pub const COMMIT: &str = "\([0-9a-f]\{40\}\)";$$/\1/p' $(REFERENCE))
+ORACLE_TAG  ?= $(shell sed -n 's/^ *"\(v[0-9][0-9.]*\)"$$/\1/p' $(REFERENCE))
+
+ifeq ($(strip $(ORACLE_REF)),)
+$(error $(REFERENCE) names no commit)
+endif
+ifeq ($(strip $(ORACLE_TAG)),)
+$(error $(REFERENCE) names no tag)
+endif
 
 ORACLE_DIR   := target/oracle
 ORACLE_SRC   := $(ORACLE_DIR)/src
@@ -20,6 +30,10 @@ $(ORACLE_STAMP):
 	git -C $(ORACLE_REPO) archive $(ORACLE_REF) | tar -x -C $(ORACLE_SRC)
 	cd $(ORACLE_SRC) && CGO_ENABLED=0 go build -ldflags "-X main.version=$(ORACLE_TAG)" -o ../safetybox .
 	touch $@
+
+.PHONY: oracle-ref
+oracle-ref: ## Print the commit of the Go reference.
+	@echo $(ORACLE_REF)
 
 .PHONY: oracle
 oracle: $(ORACLE_STAMP) ## Build the Go reference binary into target/oracle/.

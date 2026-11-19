@@ -23,7 +23,7 @@ jobs:
           rustup toolchain install stable --profile minimal --component rustfmt,clippy
           rustup default stable
 
-      # The Go reference is built from the commit the Makefile pins.
+      # The Go reference is built from the commit src/reference.rs names.
       - uses: actions/setup-go@v7
         with:
           go-version: "1.27"
@@ -38,7 +38,7 @@ jobs:
       # Fetch that one commit, outside the working tree.
       - name: Fetch the Go reference
         run: |
-          ref="$(sed -n 's/^ORACLE_REF *?= *//p' Makefile)"
+          ref="$(make --silent oracle-ref)"
           test -n "$ref"
           git init --quiet "$RUNNER_TEMP/safetybox"
           git -C "$RUNNER_TEMP/safetybox" fetch --quiet --depth 1 \

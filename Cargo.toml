@@ -1,11 +1,12 @@
 [package]
 name = "sanctuary"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 authors = ["Samuel Stidham"]
 description = "A single-user, versioned secrets vault. The Rust version of SafetyBox."
 license = "MIT"
 repository = "https://github.com/samuel-stidham/sanctuary"
+documentation = "https://samuel-stidham.github.io/safetybox-docs/"
 readme = "README.md"
 keywords = ["secrets", "vault", "age", "cli"]
 categories = ["command-line-utilities", "cryptography"]

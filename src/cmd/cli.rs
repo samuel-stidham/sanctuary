@@ -12,9 +12,12 @@ pub const NAME: &str = "sanctuary";
 
 /// What follows the command name on the version line: this build's
 /// own version, and the release of the Go original it behaves like.
+/// `reference` names that release.
 pub const VERSION: &str = concat!(
     env!("CARGO_PKG_VERSION"),
-    " (Rust, compatible with safetybox v4.0.2)"
+    " (Rust, compatible with safetybox ",
+    crate::reference::tag!(),
+    ")"
 );
 
 /// Parses the value of a switch written as `--flag=value`, accepting
@@ -352,8 +355,13 @@ mod tests {
         let (own, reference) = VERSION.split_once(' ').expect("two parts");
 
         assert_eq!(own, env!("CARGO_PKG_VERSION"));
-        assert!(reference.starts_with("(Rust, compatible with safetybox v"));
-        assert!(reference.ends_with(')'));
+        assert_eq!(
+            reference,
+            format!(
+                "(Rust, compatible with safetybox {})",
+                crate::reference::TAG
+            )
+        );
     }
 
     #[test]

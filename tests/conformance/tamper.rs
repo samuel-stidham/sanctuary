@@ -7,8 +7,7 @@ use std::fs::OpenOptions;
 use std::process::Stdio;
 
 use crate::support::{
-    Fixture, VALUE_ONE, VALUE_THREE, VALUE_TWO, chmod, collect, is_reference, mkdir, msg,
-    other_key, write_file,
+    Fixture, VALUE_ONE, VALUE_THREE, VALUE_TWO, chmod, collect, mkdir, msg, other_key, write_file,
 };
 
 // Go: TestPrintJSONReturnsWriteError
@@ -560,22 +559,10 @@ fn set_refuses_a_stored_recipient_that_is_not_canonical() {
     assert_eq!(fixture.reveal_value("api/accepted"), VALUE_ONE);
 }
 
-// A secret name edited to hold a newline and an escape sequence must
-// not reach the terminal as written. rekey names the version it could
-// not re-seal, and that name would otherwise forge a log line.
-//
-// The Go reference prints the name raw, so it is exempt until it does
-// not.
-#[test]
-fn a_tampered_name_cannot_forge_a_log_line() {
-    if is_reference() {
-        return;
-    }
-
-    let fixture = Fixture::new();
-
-    fixture.set("api/a", VALUE_ONE, &[]);
-
+/// Rewrites a secret's name to one that forges a log record with its
+/// newline and carries a live erase-line escape sequence. The name
+/// grammar is enforced on write, so no verb can store this name.
+fn forge_name(fixture: &Fixture) {
     let edited = fixture.sql(
         "UPDATE secret SET name = 'api/a' || char(10) || 'INFO fake forged line' || char(27) || '[2K'
           WHERE name = 'api/a'",
@@ -583,15 +570,67 @@ fn a_tampered_name_cannot_forge_a_log_line() {
     );
 
     assert_eq!(edited, 1);
+}
+
+/// The error names the tampered secret quoted and escaped, on one
+/// line, with no live control byte.
+#[track_caller]
+fn assert_name_cannot_forge_a_log_line(stderr: &str) {
+    assert_eq!(stderr.lines().count(), 1, "{stderr}");
+    assert!(!stderr.contains('\u{1b}'), "{stderr:?}");
+    assert!(
+        stderr.starts_with(r#"ERRO reseal "api/a\nINFO fake forged line\x1b[2K" version 1: "#),
+        "{stderr}"
+    );
+}
+
+// Go: TestRekeyEscapesATamperedName
+//
+// A secret name edited to hold a newline and an escape sequence must
+// not reach the terminal as written. rekey names the version it could
+// not re-seal, and that name would otherwise forge a log line.
+#[test]
+fn a_tampered_name_cannot_forge_a_log_line() {
+    let fixture = Fixture::new();
+
+    fixture.set("api/a", VALUE_ONE, &[]);
+    forge_name(&fixture);
+
+    assert_name_cannot_forge_a_log_line(&fixture.fail("", &["rekey"]).stderr);
+}
+
+// Go: TestMigrateEscapesATamperedName
+//
+// The same check on the migrate path.
+#[test]
+fn migrate_escapes_a_tampered_name() {
+    let fixture = Fixture::new();
+
+    fixture.set("api/a", VALUE_ONE, &[]);
+    fixture.downgrade_to_v1();
+    forge_name(&fixture);
+
+    assert_name_cannot_forge_a_log_line(&fixture.fail("", &["migrate"]).stderr);
+}
+
+// Go: TestResealErrorKeepsAValidNameUnquoted
+//
+// The other direction. A name the grammar allows prints as it is.
+#[test]
+fn a_reseal_error_keeps_a_valid_name_unquoted() {
+    let fixture = Fixture::new();
+
+    fixture.set("api/a", VALUE_ONE, &[]);
+
+    // A valid name the envelope was not sealed to still fails the reseal.
+    let edited = fixture.sql("UPDATE secret SET name = 'api/b' WHERE name = 'api/a'", []);
+
+    assert_eq!(edited, 1);
 
     let refused = fixture.fail("", &["rekey"]);
 
-    assert_eq!(refused.stderr.lines().count(), 1, "{}", refused.stderr);
-    assert!(!refused.stderr.contains('\u{1b}'), "{:?}", refused.stderr);
     assert!(
-        refused
-            .stderr
-            .starts_with(r#"ERRO reseal "api/a\nINFO fake forged line\x1b[2K" version 1: "#),
+        refused.stderr.starts_with("ERRO reseal api/b version 1: "),
         "{}",
         refused.stderr
     );

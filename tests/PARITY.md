@@ -1,7 +1,7 @@
 # Test parity with the Go original
 
 The conformance suite in `tests/conformance/` ports the Go test suite
-of safetybox v4.0.2, commit `e37428e`. `make parity` checks this
+of safetybox v4.0.3, commit `f057803`. `make parity` checks this
 ledger against the Go source, so it cannot drift.
 
 ## How a Go test becomes a Rust test
@@ -55,22 +55,17 @@ difference is deliberate, and the suite pins it for each binary.
 | What | Go original | Rust port |
 | --- | --- | --- |
 | Command name, in help and in hints | `safetybox` | `sanctuary` |
-| Version line | `safetybox version v4.0.2` | `sanctuary 0.1.0 (Rust, compatible with safetybox v4.0.2)` |
+| Version line | `safetybox version v4.0.3` | `sanctuary 0.1.1 (Rust, compatible with safetybox v4.0.3)` |
 | Help layout | cobra | laid out by the port, in clap's vocabulary |
-| Usage error wording | cobra | clap, cut to one line |
+| Wording of an unknown flag or an unknown command | cobra | clap, cut to one line. A miscounted command line reads the same in both. |
 | Completion scripts | cobra, with a hidden `__complete` verb | `clap_complete` |
 | A refused `--expires`, after the shared `use RFC3339 or YYYY-MM-DD` | the Go time parser's own complaint follows | nothing follows |
 | A corrupt stored timestamp, after the shared `stored timestamp is not valid, the vault may have been edited` | the Go time parser's own complaint follows, then the advice | the advice follows directly |
 | A file that is not an age file, after the shared `identity decrypt failed:` or `envelope decrypt failed:` | the Go `age` library's complaint | the `age` crate's complaint. A wrong passphrase reads the same in both. |
 | Locking the decrypted identity in memory fails | the process panics | the read goes on with the bytes unlocked, and they are still wiped |
 | The order of variables in the environment `exec` gives the child | inherited order, with each injected variable last | sorted by name. The set of variables and their values is the same. |
-| A stray argument, such as a value typed after the name in `set` | counted, never repeated, for a verb that takes arguments. Repeated as `unknown command "..."` for a verb that takes none. | never repeated, for any verb: `too many arguments: set accepts 1 argument` |
-| A `--vault`, `--identity`, `SAFETYBOX_VAULT`, or `SAFETYBOX_IDENTITY` path that is not clean, such as one holding `x/..` | used as written. `rekey` then commits the vault and fails the identity swap. | cleaned once, when the path is resolved. Both versions already clean the default paths. |
 | A stored recipient that does not parse, after the shared `malformed recipient "...":` | the Go `age` library's reason | the `age` crate's reason. An upper-case recipient reads `invalid type "AGE"` in both. |
 | A secret name in the vault that is not UTF-8, quoted in an error | the bad byte as `\xff` | the replacement character as `\ufffd`. Result output shows the replacement character in both. |
-| `exec` with one env-named secret over the kernel's limit for a single variable, 32 pages on Linux | every `exec` fails with `argument list too long` | the secret is skipped with a warning that names it, and the rest inject. Reported to safetybox. |
-| A secret withheld from `exec` or from `reveal --format` for its value, such as one holding a NUL byte, when the caller already holds a variable of that name | the stale value stays in place | `exec` clears the variable for the child, and `reveal` writes an erase line. A reserved name keeps its inherited value in both. Reported to safetybox. |
-| A secret name in the vault that the name grammar does not allow, named in a `rekey` or `migrate` error | printed as stored, so a newline or an escape sequence reaches the terminal | printed quoted and escaped. A valid name prints the same in both. Reported to safetybox. |
 | A passphrase that is not UTF-8 | accepted | refused with `passphrase is not valid UTF-8`, because the `age` crate takes a passphrase as a string |
 
 Everything else is held to be the same: the vault and identity paths
@@ -147,7 +142,8 @@ each of them.
 | `vault::a_relative_vault_path_shaped_like_a_uri_names_the_file_itself` was added. | A review found that the port opened a relative path starting with `file:` as a URI, and the vault landed in another file. |
 | `reveal::a_reader_that_stops_early_ends_the_command_by_sigpipe` was added. | A review found that the port reported a broken pipe as an error. The Go original ends by the signal. |
 | `tamper::a_name_that_is_not_utf8_does_not_break_the_metadata_verbs` was added. | A review found that one odd row stopped `list` for every secret in the port. |
-| `exec::exec_skips_a_secret_too_large_for_a_variable`, `exec::a_withheld_secret_never_leaves_a_stale_variable`, and `tamper::a_tampered_name_cannot_forge_a_log_line` were added. | Each pins a fix the Go original does not have yet, so each returns early for the Go binary. Remove that guard when safetybox fixes the matching issue. |
+| `exec::exec_skips_a_secret_too_large_for_a_variable`, `exec::a_withheld_secret_never_leaves_a_stale_variable`, and `tamper::a_tampered_name_cannot_forge_a_log_line` were added. | Each pinned a fix the Go original did not have yet. safetybox v4.0.3 has all three, with Go tests of its own. Each test now runs against both binaries and names the Go test it ports. |
 | `cli::an_empty_path_flag_counts_as_not_passed`, `cli::help_and_completion_succeed_on_what_they_do_not_know`, and `logging::json_time_follows_tz_and_survives_a_hostile_one` were added. | A second review found the port differed from the Go original in each. Both binaries pass them. |
 | `cli::terminal_help_is_plain_under_ci` was added, and the harness now removes `CI` from every run. | The first CI run found the Go version drops terminal color while `CI` is set, and the port did not. Both binaries pass it. |
+| `cli::usage_errors_are_one_error_record` now pins the wording of a miscounted command line for both binaries. | safetybox v4.0.3 words it with its own validator, and the port uses the same words. Only an unknown flag or command is still worded per binary. |
 | `tamper::set_refuses_a_stored_recipient_that_is_not_canonical` was added. | A review found that the port accepted an upper-case stored recipient, which the Go original refuses. |

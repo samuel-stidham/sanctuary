@@ -237,9 +237,15 @@ pub fn is_valid_name(name: &str) -> bool {
 mod tests {
     use super::{Entry, canonical_address, is_valid_name, shown_name};
 
+    // Go: TestPrintableName
     #[test]
     fn a_name_from_the_vault_is_shown_safely() {
         assert_eq!(shown_name("api/one"), "api/one");
+        assert_eq!(
+            shown_name("api/v1/some.name_with-marks"),
+            "api/v1/some.name_with-marks"
+        );
+        assert_eq!(shown_name("has space"), "\"has space\"");
         assert_eq!(
             shown_name("api/a\nINFO fake forged\u{1b}[2K"),
             "\"api/a\\nINFO fake forged\\x1b[2K\""

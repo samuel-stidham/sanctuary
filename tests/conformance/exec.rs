@@ -2,7 +2,7 @@
 //! of `cmd/hardening_internal_test.go`, and the exec half of
 //! `cmd/skip_failopen_internal_test.go`.
 
-use crate::support::{Fixture, SECRET_NAME, VALUE_ONE, VALUE_TWO, is_reference, run};
+use crate::support::{Fixture, SECRET_NAME, VALUE_ONE, VALUE_TWO, run};
 
 const PRINT_FIRST_ARG: &str = r#"printf '%s' "$1""#;
 
@@ -130,23 +130,65 @@ fn exec_skips_nul_valued_secret() {
     assert!(ran.stderr.contains("NUL"));
 }
 
+/// Prints FAKE_NUL, or `absent` when it is unset, so a cleared variable
+/// is told apart from an empty one.
+const PRINT_NUL_OR_ABSENT: &str = r#"printf '%s' "${FAKE_NUL-absent}""#;
+
+const STALE: &str = "fake-stale-value-not-real";
+
+/// The longest value `env_name` can carry on Linux. The kernel measures
+/// the name, the equals sign, the value, and the terminating NUL, and
+/// allows 32 pages.
+#[cfg(target_os = "linux")]
+fn max_env_value_bytes(env_name: &str) -> usize {
+    let asked = std::process::Command::new("getconf")
+        .arg("PAGESIZE")
+        .output()
+        .expect("run getconf");
+    let page: usize = String::from_utf8_lossy(&asked.stdout)
+        .trim()
+        .parse()
+        .expect("a page size");
+
+    32 * page - env_name.len() - "=".len() - 1
+}
+
+// Go: TestExecSkipsASecretTooLargeForAVariable
+//
 // One env-named secret too large for a variable must not break exec
 // for every command. Linux refuses to start any program when a single
-// variable is over 32 pages. The secret is skipped with a warning that
-// names it, and the other secrets still inject.
-//
-// The Go reference does not skip it yet, so it is exempt until it does.
+// variable is over 32 pages. The largest value that fits still
+// injects. One more byte is skipped with a warning that names the
+// secret, and the other secrets still inject.
 #[cfg(target_os = "linux")]
 #[test]
 fn exec_skips_a_secret_too_large_for_a_variable() {
-    if is_reference() {
-        return;
-    }
+    let limit = max_env_value_bytes("FAKE_BIG");
+
+    let fits = Fixture::new();
+
+    fits.set("lab/big", &"f".repeat(limit), &["--env-name", "FAKE_BIG"]);
+
+    let ran = fits.ok(
+        "",
+        &["exec", "--", "sh", "-c", r#"printf '%s' "${#FAKE_BIG}""#],
+    );
+
+    assert_eq!(
+        ran.stdout,
+        limit.to_string(),
+        "the child must receive the whole value"
+    );
+    assert!(!ran.stderr.contains("secret skipped"), "{}", ran.stderr);
 
     let fixture = Fixture::new();
 
-    fixture.set("lab/big", &"f".repeat(200_000), &["--env-name", "FAKE_BIG"]);
     fixture.set("lab/ok", VALUE_ONE, &["--env-name", "FAKE_OK"]);
+    fixture.set(
+        "lab/big",
+        &"f".repeat(limit + 1),
+        &["--env-name", "FAKE_BIG"],
+    );
 
     // This process already holds a value under the name. The child
     // must not read it in place of the secret that was withheld.
@@ -158,7 +200,7 @@ fn exec_skips_a_secret_too_large_for_a_variable() {
         r#"printf '%s|%s' "$FAKE_OK" "${FAKE_BIG-absent}""#,
     ]);
 
-    command.env("FAKE_BIG", "fake-stale");
+    command.env("FAKE_BIG", STALE);
 
     let ran = run(command, "").assert_ok();
 
@@ -167,56 +209,205 @@ fn exec_skips_a_secret_too_large_for_a_variable() {
         ran.stderr.contains("lab/big"),
         "the skipped secret must be named"
     );
-    assert!(ran.stderr.contains("too large"));
+    assert!(
+        ran.stderr
+            .contains("value is too large for an environment variable, which holds at most"),
+        "{}",
+        ran.stderr
+    );
+    assert!(ran.stderr.contains("bytes under this name"));
+    assert!(ran.stderr.contains("cleared from the environment"));
 
     // The value is intact for the verbs that do not use a variable.
-    assert_eq!(fixture.reveal_value("lab/big").len(), 200_000);
+    assert_eq!(fixture.reveal_value("lab/big").len(), limit + 1);
 }
 
-// A secret withheld for its value must not leave a stale value of the
-// same name in place. exec clears the variable for the child, and the
-// sh output of reveal erases it for the sourcing shell. A reserved
-// name is different: the inherited value stays.
+// Go: TestExecClearsAVariableWithheldForItsValue
 //
-// The Go reference keeps the stale value, so it is exempt until it
-// does not.
+// A secret withheld for its value must not leave a stale value of the
+// same name in place. The child would read the value the calling shell
+// held and could not tell it from the secret.
 #[test]
 fn a_withheld_secret_never_leaves_a_stale_variable() {
-    if is_reference() {
-        return;
-    }
-
     let fixture = Fixture::new();
 
     fixture.ok(
-        b"abc\x00def\n",
-        &["set", "lab/nul", "--env-name", "FAKE_NUL"],
+        b"fake\x00nul\n",
+        &["set", "api/nul", "--env-name", "FAKE_NUL"],
     );
-    fixture.set("lab/ok", VALUE_ONE, &["--env-name", "FAKE_OK"]);
 
-    let mut command = fixture.command(&[
-        "exec",
-        "--",
-        "sh",
-        "-c",
-        r#"printf '%s|%s' "$FAKE_OK" "${FAKE_NUL-absent}""#,
-    ]);
+    let mut command = fixture.command(&["exec", "--", "sh", "-c", PRINT_NUL_OR_ABSENT]);
 
-    command.env("FAKE_NUL", "fake-stale");
+    command.env("FAKE_NUL", STALE);
 
     let ran = run(command, "").assert_ok();
 
-    assert_eq!(ran.stdout, format!("{VALUE_ONE}|absent"));
-    assert!(ran.stderr.contains("variable cleared"), "{}", ran.stderr);
+    assert_eq!(
+        ran.stdout, "absent",
+        "a withheld secret must leave its variable absent, never stale"
+    );
+    assert!(ran.stderr.contains("secret skipped"), "{}", ran.stderr);
+    assert!(
+        ran.stderr.contains(
+            "variable cleared from the environment, so the child cannot read a stale value"
+        ),
+        "{}",
+        ran.stderr
+    );
+}
+
+// Go: TestExecWithheldSecretIsQuietInACleanEnvironment
+//
+// The clearing warns only when this process held the variable. With
+// nothing to clear, the skip warning is the only record.
+#[test]
+fn a_withheld_secret_is_quiet_in_a_clean_environment() {
+    let fixture = Fixture::new();
+
+    fixture.ok(
+        b"fake\x00nul\n",
+        &["set", "api/nul", "--env-name", "FAKE_NUL"],
+    );
+
+    let mut command = fixture.command(&["exec", "--", "sh", "-c", PRINT_NUL_OR_ABSENT]);
+
+    command.env_remove("FAKE_NUL");
+
+    let ran = run(command, "").assert_ok();
+
+    assert_eq!(ran.stdout, "absent");
+    assert!(ran.stderr.contains("secret skipped"), "{}", ran.stderr);
+    assert!(
+        !ran.stderr.contains("cleared from the environment"),
+        "{}",
+        ran.stderr
+    );
+}
+
+// Go: TestExecKeepsAWithheldEnvNameAnotherSecretSupplies
+//
+// Guards against clearing too much. A name another secret delivers is
+// current.
+#[test]
+fn exec_keeps_a_withheld_env_name_another_secret_supplies() {
+    let fixture = Fixture::new();
+
+    fixture.set(
+        "api/aaa-good",
+        "fake-good-value",
+        &["--env-name", "FAKE_NUL"],
+    );
+    fixture.ok(
+        b"fake\x00nul\n",
+        &["set", "api/zzz-nul", "--env-name", "FAKE_NUL"],
+    );
+
+    let mut command = fixture.command(&["exec", "--", "sh", "-c", PRINT_NUL_OR_ABSENT]);
+
+    command.env("FAKE_NUL", STALE);
+
+    let ran = run(command, "").assert_ok();
+
+    assert_eq!(ran.stdout, "fake-good-value");
+    assert!(
+        !ran.stderr.contains("cleared from the environment"),
+        "{}",
+        ran.stderr
+    );
+}
+
+// Go: TestExecKeepsAReservedVariableASkippedSecretNamed
+//
+// A reserved name is never cleared. A secret must not supply PATH, and
+// skipping one must not take the inherited PATH away from the child.
+#[test]
+fn exec_keeps_a_reserved_variable_a_skipped_secret_named() {
+    let fixture = Fixture::new();
+
+    fixture.set(
+        "api/tampered",
+        "fake-real-value",
+        &["--env-name", "FAKE_TAMPERED"],
+    );
+
+    // Editing the column without re-sealing makes this a mismatch skip.
+    fixture.tamper_env_name("api/tampered", "PATH");
+
+    let mut command =
+        fixture.command(&["exec", "--", "sh", "-c", r#"printf '%s' "${PATH-absent}""#]);
+
+    command.env("PATH", "/usr/bin:/bin");
+
+    let ran = run(command, "").assert_ok();
+
+    assert_eq!(
+        ran.stdout, "/usr/bin:/bin",
+        "the child must keep the PATH it inherited"
+    );
+    assert!(ran.stderr.contains("skipped"), "{}", ran.stderr);
+    assert!(
+        !ran.stderr.contains("cleared from the environment"),
+        "{}",
+        ran.stderr
+    );
+}
+
+// Go: TestRevealErasesAVariableWithheldForItsValue
+//
+// A shell that sources the output keeps whatever it held under a name
+// reveal left out, so the skip must write an erase line.
+#[test]
+fn reveal_erases_a_variable_withheld_for_its_value() {
+    for (format, erase) in [
+        ("sh", "unset FAKE_NUL\n"),
+        ("fish", "set --erase FAKE_NUL\n"),
+    ] {
+        let fixture = Fixture::new();
+
+        fixture.ok(
+            b"fake\x00nul\n",
+            &["set", "api/nul", "--env-name", "FAKE_NUL"],
+        );
+        fixture.set(
+            "api/healthy",
+            "fake-healthy-value",
+            &["--env-name", "FAKE_HEALTHY"],
+        );
+
+        let revealed = fixture.ok("", &["reveal", "--env", "--format", format]);
+
+        assert!(
+            revealed.stdout.contains(erase),
+            "{format}: {}",
+            revealed.stdout
+        );
+        assert!(revealed.stdout.contains("FAKE_HEALTHY"), "{format}");
+        assert!(revealed.stderr.contains("secret skipped"), "{format}");
+        assert!(
+            revealed.stderr.contains("erased"),
+            "{format}: {}",
+            revealed.stderr
+        );
+    }
+}
+
+// Go: TestRevealNeverErasesAReservedVariable
+//
+// Erasing PATH in a sourcing shell would be as harmful as setting it.
+#[test]
+fn reveal_never_erases_a_reserved_variable() {
+    let fixture = Fixture::new();
+
+    fixture.set(
+        "api/tampered",
+        "fake-real-value",
+        &["--env-name", "FAKE_TAMPERED"],
+    );
+    fixture.tamper_env_name("api/tampered", "PATH");
 
     let revealed = fixture.ok("", &["reveal", "--env", "--format", "sh"]);
 
-    assert!(
-        revealed.stdout.contains("unset FAKE_NUL\n"),
-        "{}",
-        revealed.stdout
-    );
-    assert!(revealed.stdout.contains("FAKE_OK="));
+    assert!(!revealed.stdout.contains("PATH"), "{}", revealed.stdout);
 }
 
 // Go: TestExecExitCodeStaysQuietOnStderr

@@ -105,6 +105,7 @@ mod tests {
         }
     }
 
+    // Go: TestResolvePathsAreCleaned
     #[test]
     fn every_source_is_cleaned() {
         let unclean = [

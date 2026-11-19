@@ -8,7 +8,7 @@ The Go test suite cannot run against a Rust binary, and Rust unit
 tests cannot run against Go. The conformance suite is the one suite
 both binaries run, so parity is proven there.
 
-1. `make test-oracle` passes every test, 236 since the first CI run. The Go reference still agrees
+1. `make test-oracle` passes every test, 245 since the move to safetybox v4.0.3. The Go reference still agrees
    with every expectation, so no test was bent to fit the port.
 2. `cargo test --test conformance <filter>` passes for the step's
    filters, against the Rust binary.
@@ -382,13 +382,38 @@ color where the tests expected it.
 - `cli::terminal_help_is_plain_under_ci` pins the behavior for both
   binaries.
 
-236 of 236 pass against both binaries.
+## Moving to safetybox v4.0.3
+
+safetybox v4.0.3 fixed the five issues the reviews reported: #25
+through #29. The reference moved to that tag, commit `f057803`.
+`src/reference.rs` now names the release, and nothing else does.
+
+- The 15 Go tests v4.0.3 added are all ported. Ten became conformance
+  tests, and the rest map onto tests that already existed.
+- The three tests that skipped the Go binary now run against it.
+- Two of the new Go tests failed against `sanctuary`. A secret skipped
+  for a metadata mismatch, with its env name edited to `PATH`, made
+  `exec` clear `PATH` for the child and made `reveal` write
+  `unset PATH`. v4.0.2 did the same. v4.0.3 never clears or erases a
+  reserved name on any skip path, and `sanctuary` now does the same.
+- v4.0.3 words a miscounted command line with its own validator, in
+  the words `sanctuary` already used for a stray argument. `sanctuary`
+  now uses those words for a missing argument too, and says `at most`
+  and `at least` where the Go version does. The two read the same for
+  every verb.
+- Five rows left the intended differences in `tests/PARITY.md`.
+
+One thing a byte comparison showed: when `exec` clears two variables,
+the Go version logs the two warnings in no fixed order. `sanctuary`
+logs them in a fixed order. Neither order is a contract.
+
+245 of 245 pass against both binaries.
 
 ## Done
 
-- [x] `cargo test` passes 236 of 236 conformance tests against the Rust
+- [x] `cargo test` passes 245 of 245 conformance tests against the Rust
       binary, on three runs in a row.
-- [x] `make test-oracle` passes 236 of 236 against the Go binary.
+- [x] `make test-oracle` passes 245 of 245 against the Go binary.
 - [x] All 22 tests in the "Ported as unit tests" table of
       `tests/PARITY.md` have a Rust unit test. The 3 left as not
       ported test log attribute groups, which the port does not have.

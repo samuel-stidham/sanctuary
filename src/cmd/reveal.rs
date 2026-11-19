@@ -359,7 +359,8 @@ fn print_assignments(
 /// makes the variable absent, which the caller can test for.
 ///
 /// A name another secret supplied is left alone, since that value is
-/// current.
+/// current. A reserved name is left alone too: erasing PATH in the
+/// sourcing shell would be as harmful as setting it.
 fn erase_skipped<'a>(
     skipped: impl Iterator<Item = &'a str>,
     delivered: &[(&str, &str)],
@@ -369,6 +370,7 @@ fn erase_skipped<'a>(
 
     for env_name in skipped {
         if !is_shell_identifier(env_name)
+            || is_reserved(env_name)
             || delivered.iter().any(|(name, _)| *name == env_name)
             || erased.contains(&env_name)
         {
