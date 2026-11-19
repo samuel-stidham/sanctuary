@@ -35,7 +35,7 @@ fn switch_value(text: &str) -> Result<bool, String> {
     name = NAME,
     version = VERSION,
     about = "A single-user, versioned secrets vault",
-    long_about = "Safetybox is a CLI-first secrets manager. Values are sealed in age envelopes. \
+    long_about = "Sanctuary is a CLI-first secrets manager. Values are sealed in age envelopes. \
                   Metadata lives in SQLite.",
     disable_version_flag = true,
     args_override_self = true,

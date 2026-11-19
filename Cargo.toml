@@ -1,6 +1,6 @@
 [package]
 name = "sanctuary"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 authors = ["Samuel Stidham"]
 description = "A single-user, versioned secrets vault. The Rust version of SafetyBox."

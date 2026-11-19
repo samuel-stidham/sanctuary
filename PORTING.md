@@ -407,6 +407,18 @@ One thing a byte comparison showed: when `exec` clears two variables,
 the Go version logs the two warnings in no fixed order. `sanctuary`
 logs them in a fixed order. Neither order is a contract.
 
+## Its own name on the help page
+
+The root help page showed the Go original's banner and name:
+`SAFETYBOX` in figlet, then `Safetybox` and the version. A person who
+ran `sanctuary` saw another program's name. The page now draws
+`SANCTUARY` in the same font, with the same gradient, and says
+`Sanctuary` under it and in the description.
+
+Log records and hints still say safetybox where the Go original does,
+such as `safetybox initialized`. Those are held byte for byte, and the
+vault and its directory keep that name.
+
 245 of 245 pass against both binaries.
 
 ## Done

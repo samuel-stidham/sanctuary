@@ -11,14 +11,19 @@ use clap::{Arg, Command};
 use super::cli::VERSION;
 use crate::color::Profile;
 
-/// The figlet "small" rendering of SAFETYBOX. Pure ASCII on purpose:
-/// these glyphs render evenly in every monospace font.
+/// The figlet "small" rendering of SANCTUARY, the font the Go original
+/// uses for its own name. Pure ASCII on purpose: these glyphs render
+/// evenly in every monospace font.
 const WORDMARK: [&str; 4] = [
-    r" ___   _   ___ ___ _______   _____  _____  __",
-    r"/ __| /_\ | __| __|_   _\ \ / / _ )/ _ \ \/ /",
-    r"\__ \/ _ \| _|| _|  | |  \ V /| _ \ (_) >  <",
-    r"|___/_/ \_\_| |___| |_|   |_| |___/\___/_/\_\",
+    r" ___   _   _  _  ___ _____ _   _  _   _____   __",
+    r"/ __| /_\ | \| |/ __|_   _| | | |/_\ | _ \ \ / /",
+    r"\__ \/ _ \| .` | (__  | | | |_| / _ \|   /\ V /",
+    r"|___/_/ \_\_|\_|\___| |_|  \___/_/ \_\_|_\ |_|",
 ];
+
+/// The name under the banner. The Go original shows its own name
+/// there, so a person who runs `sanctuary` sees Sanctuary.
+const DISPLAY_NAME: &str = "Sanctuary";
 
 /// One gradient stop of the banner: the color itself, and the nearest
 /// color in each smaller palette.
@@ -94,7 +99,8 @@ pub fn render(command: &Command, path: &[&str], profile: Profile) -> String {
     let invocation = path.join(" ");
 
     if is_root {
-        writeln!(page, "{}\n\nSafetybox {VERSION}\n", banner(profile)).expect("write to a String");
+        writeln!(page, "{}\n\n{DISPLAY_NAME} {VERSION}\n", banner(profile))
+            .expect("write to a String");
     }
 
     let about = command.get_long_about().or_else(|| command.get_about());
@@ -345,7 +351,7 @@ mod tests {
         let page = page(&["sanctuary"], Profile::Plain);
 
         assert!(page.starts_with(WORDMARK[0]));
-        assert!(page.contains("\n\nSafetybox 0."));
+        assert!(page.contains("\n\nSanctuary 0."));
         assert!(page.contains("(Rust, compatible with safetybox v"));
         assert!(page.contains("Usage:\n  sanctuary [OPTIONS] <COMMAND>\n"));
         assert!(page.contains("  reveal       Deliberately print secrets' plaintext values\n"));

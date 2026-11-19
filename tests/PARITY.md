@@ -39,7 +39,7 @@ These are ported, with a difference worth knowing.
 | Go test | Difference |
 | --- | --- |
 | `TestOpenCorruptOneByteFails` | Go flips every byte in process. Each read here pays the passphrase KDF, so the port samples eight positions across the header, the MAC, the payload, and the final byte. |
-| `TestDisplayName` | Only the product name `Safetybox` is reachable, through the help header. The other cases feed names the binary never has. |
+| `TestDisplayName` | Only the name under the banner is reachable, through the help header. Each binary shows its own, see Intended differences. The other cases feed names the binary never has. |
 | `TestIsShellIdentifier` | The empty name is not a refusal at the command line. An empty `--env-name` clears the env name, which `set_clears_env_name` covers. |
 | `TestSQLiteDSNEscapesURISpecialCharacters`, `TestSQLiteDSNKeepsConnectionSettings` | The DSN string is a Go driver detail. The port pins what it buys: a path holding `#`, `?`, or `%` names the file itself, the journal is WAL, and a purge leaves no ciphertext in the vault files. |
 | `TestSubcommandHelpMatchesStockCobra` | Holds for the Go binary alone, see Intended differences. Go compares styled help to stock cobra in process. The port compares against snapshots of that same output in `tests/conformance/golden/`, captured from the Go binary. |
@@ -55,7 +55,8 @@ difference is deliberate, and the suite pins it for each binary.
 | What | Go original | Rust port |
 | --- | --- | --- |
 | Command name, in help and in hints | `safetybox` | `sanctuary` |
-| Version line | `safetybox version v4.0.3` | `sanctuary 0.1.1 (Rust, compatible with safetybox v4.0.3)` |
+| Version line | `safetybox version v4.0.3` | `sanctuary 0.1.2 (Rust, compatible with safetybox v4.0.3)` |
+| Banner and name on the root help page | `SAFETYBOX` in figlet, then `Safetybox` and the version | `SANCTUARY` in the same font, then `Sanctuary` and the version. The gradient is the same. |
 | Help layout | cobra | laid out by the port, in clap's vocabulary |
 | Wording of an unknown flag or an unknown command | cobra | clap, cut to one line. A miscounted command line reads the same in both. |
 | Completion scripts | cobra, with a hidden `__complete` verb | `clap_complete` |

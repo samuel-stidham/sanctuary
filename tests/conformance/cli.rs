@@ -188,9 +188,23 @@ const GLOBAL_FLAGS: [(&str, &str); 6] = [
     ("--log-json", "emit logs as JSON"),
 ];
 
+/// The name each binary shows under its banner: its own.
+fn display_name() -> &'static str {
+    if is_reference() {
+        "Safetybox"
+    } else {
+        "Sanctuary"
+    }
+}
+
 /// The description under the banner.
-const ABOUT: &str = "Safetybox is a CLI-first secrets manager. Values are sealed in age envelopes. \
-                     Metadata lives in SQLite.";
+fn about() -> String {
+    format!(
+        "{} is a CLI-first secrets manager. Values are sealed in age envelopes. \
+         Metadata lives in SQLite.",
+        display_name()
+    )
+}
 
 /// Every page the reference serves, cobra's own `completion` and `help`
 /// included. The snapshots are named after these.
@@ -213,9 +227,24 @@ const REFERENCE_COMMANDS: [&str; 16] = [
     "stale",
 ];
 
-/// The first and last rows of the figlet wordmark.
-const ART_ROW_ONE: &str = r" ___   _   ___ ___ _______   _____  _____  __";
-const ART_ROW_FOUR: &str = r"|___/_/ \_\_| |___| |_|   |_| |___/\___/_/\_\";
+/// The first row of the figlet wordmark. Each binary draws its own
+/// name, in the same font.
+fn art_row_one() -> &'static str {
+    if is_reference() {
+        r" ___   _   ___ ___ _______   _____  _____  __"
+    } else {
+        r" ___   _   _  _  ___ _____ _   _  _   _____   __"
+    }
+}
+
+/// The last row of the figlet wordmark.
+fn art_row_four() -> &'static str {
+    if is_reference() {
+        r"|___/_/ \_\_| |___| |_|   |_| |___/\___/_/\_\"
+    } else {
+        r"|___/_/ \_\_|\_|\___| |_|  \___/_/ \_\_|_\ |_|"
+    }
+}
 
 /// Runs the binary with no fixture: a bare home directory and `args`.
 fn bare(home: &TempDir, args: &[&str]) -> Run {
@@ -718,13 +747,13 @@ fn root_help_shows_banner_plain() {
     let out = help(&home, &["--help"], false);
 
     assert!(
-        out.starts_with(ART_ROW_ONE),
+        out.starts_with(art_row_one()),
         "the banner opens the root help"
     );
-    assert!(out.contains(ART_ROW_FOUR));
+    assert!(out.contains(art_row_four()));
     assert!(!out.contains('\x1b'), "piped help carries no styling bytes");
 
-    assert_says(&out, ABOUT, "root help");
+    assert_says(&out, &about(), "root help");
 
     for page in &PAGES {
         assert_says(
@@ -753,7 +782,7 @@ fn root_help_shows_banner_plain() {
             .strip_prefix(&format!("{} ", command_name()))
             .expect("the version line opens with the command name");
 
-        assert_says(&out, &format!("Safetybox {version}"), "root help");
+        assert_says(&out, &format!("Sanctuary {version}"), "root help");
     }
 
     assert_reference_golden("help/root", &out);
@@ -782,7 +811,7 @@ fn subcommand_help_says_what_the_reference_says() {
         let out = help(&home, &[command, "--help"], false);
 
         assert!(
-            !out.contains(ART_ROW_ONE),
+            !out.contains(art_row_one()),
             "{command} help must not carry the banner"
         );
         assert!(
@@ -857,10 +886,10 @@ fn forced_color_help_carries_the_banner_gradient() {
     let root = help(&home, &["--help"], true);
     let banner: Vec<&str> = root.lines().take(4).collect();
 
-    assert_eq!(banner[0], format!("\x1b[95m{ART_ROW_ONE}\x1b[0m"));
+    assert_eq!(banner[0], format!("\x1b[95m{}\x1b[0m", art_row_one()));
     assert!(banner[1].starts_with("\x1b[95m") && banner[1].ends_with("\x1b[0m"));
     assert!(banner[2].starts_with("\x1b[91m") && banner[2].ends_with("\x1b[0m"));
-    assert_eq!(banner[3], format!("\x1b[91m{ART_ROW_FOUR}\x1b[0m"));
+    assert_eq!(banner[3], format!("\x1b[91m{}\x1b[0m", art_row_four()));
 
     let below_banner = root.lines().skip(4).collect::<Vec<_>>().join("\n");
 
@@ -1033,7 +1062,7 @@ fn terminal_help_honors_no_color() {
 
     assert!(status.success());
     assert!(!displayed.contains('\x1b'));
-    assert!(displayed.contains(ART_ROW_ONE));
+    assert!(displayed.contains(art_row_one()));
 }
 
 // A path flag passed empty counts as not passed. A script that writes

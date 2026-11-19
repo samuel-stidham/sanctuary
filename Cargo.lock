@@ -1394,7 +1394,7 @@ dependencies = [
 
 [[package]]
 name = "sanctuary"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "age",
  "base64 0.23.1",

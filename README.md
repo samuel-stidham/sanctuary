@@ -46,7 +46,7 @@ release it is compatible with in its version line.
 
 ```console
 $ sanctuary --version
-sanctuary 0.1.1 (Rust, compatible with safetybox v4.0.3)
+sanctuary 0.1.2 (Rust, compatible with safetybox v4.0.3)
 ```
 
 A behavior change lands in both versions. The Go release is tagged
@@ -87,7 +87,8 @@ sanctuary differs from the Go version in presentation only.
 | What | Go version | Rust version |
 | --- | --- | --- |
 | Command name, in help and in hints | `safetybox` | `sanctuary` |
-| Version line | `safetybox version v4.0.3` | `sanctuary 0.1.1 (Rust, compatible with safetybox v4.0.3)` |
+| Version line | `safetybox version v4.0.3` | `sanctuary 0.1.2 (Rust, compatible with safetybox v4.0.3)` |
+| Banner and name on the root help page | `SAFETYBOX`, then `Safetybox` | `SANCTUARY`, then `Sanctuary` |
 | Help layout | cobra | laid out by sanctuary, in clap's vocabulary |
 | Wording of an unknown flag or an unknown command | cobra | clap, cut to one line |
 | Completion scripts | cobra | `clap_complete` |
